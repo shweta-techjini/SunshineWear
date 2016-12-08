@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">SunshineWear</string>
+    <string name="message">Watch face tapped</string>
+    <string name="my_digital_name">My Digital</string>
+    <string name="hour_format">%02d:</string>
+    <string name="minute_format">%02d</string>
+    <string name="date_format">EEE, MMM dd yyyy</string>
+</resources>
