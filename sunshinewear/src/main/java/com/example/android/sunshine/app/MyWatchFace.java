@@ -231,13 +231,15 @@ public class MyWatchFace extends CanvasWatchFaceService {
 
             if (visible) {
                 registerReceiver();
-                mGoogleApiClient.connect();
+                if (!mGoogleApiClient.isConnected()) {
+                    mGoogleApiClient.connect();
+                }
                 // Update time zone in case it changed while we weren't visible.
                 mCalendar.setTimeZone(TimeZone.getDefault());
                 invalidate();
             } else {
                 unregisterReceiver();
-                mGoogleApiClient.disconnect();
+//                mGoogleApiClient.disconnect();
             }
 
             // Whether the timer should be running depends on whether we're visible (as well as
