@@ -234,7 +234,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
                 mGoogleApiClient.connect();
                 // Update time zone in case it changed while we weren't visible.
                 mCalendar.setTimeZone(TimeZone.getDefault());
-//                invalidate();
+                invalidate();
             } else {
                 unregisterReceiver();
                 mGoogleApiClient.disconnect();
@@ -492,14 +492,6 @@ public class MyWatchFace extends CanvasWatchFaceService {
                             }
                         }
                     });
-//            HashSet<String> results = new HashSet<String>();
-//            NodeApi.GetConnectedNodesResult nodesResult =
-//                    Wearable.NodeApi.getConnectedNodes(mGoogleApiClient).await();
-//            List<Node> nodes = nodesResult.getNodes();
-//            if (nodes.size() > 0) {
-//                return nodes.get(0).getId();
-//            }
-//            return null;
         }
 
         private final ResultCallback<DataItemBuffer> onConnectionResult = new ResultCallback<DataItemBuffer>() {
@@ -535,7 +527,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
                 Log.d("MyWatchFaceService", "high temprature is :: " + highTemp);
                 Log.d("MyWatchFaceService", "low temprature is :: " + lowTemp);
                 Log.d("MyWatchFaceService", "description is :: " + desc);
-                Toast.makeText(getApplicationContext(), "High temprature is :: " + highTemp, Toast.LENGTH_SHORT).show();
+//                Toast.makeText(getApplicationContext(), "High temprature is :: " + highTemp, Toast.LENGTH_SHORT).show();
                 invalidate();
             }
         }
