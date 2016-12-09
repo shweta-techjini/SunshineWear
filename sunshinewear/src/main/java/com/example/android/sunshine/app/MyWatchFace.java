@@ -48,7 +48,6 @@ import com.google.android.gms.wearable.DataApi;
 import com.google.android.gms.wearable.DataEvent;
 import com.google.android.gms.wearable.DataEventBuffer;
 import com.google.android.gms.wearable.DataItem;
-import com.google.android.gms.wearable.DataItemBuffer;
 import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.MessageApi;
@@ -73,6 +72,11 @@ public class MyWatchFace extends CanvasWatchFaceService {
             Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
     private static final Typeface BOLD_TYPEFACE =
             Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD);
+    private static final String WEATHER_REQUEST = "/weather-request";
+    private static final String WEATHER_INFO = "/weather-info";
+    private static final String WEATHER_HIGH = "w_high";
+    private static final String WEATHER_LOW = "w_low";
+    private static final String WEATHER_ICON = "w_icon";
 
     /**
      * Update rate in milliseconds for interactive mode. We update once a second since seconds are
@@ -437,7 +441,6 @@ public class MyWatchFace extends CanvasWatchFaceService {
             Log.d("MyWatchFace", "OnConnectedCall");
             Wearable.DataApi.addListener(mGoogleApiClient, this);
             getDataFromMobileApp();
-//            Wearable.DataApi.getDataItems(mGoogleApiClient, new Uri.Builder().scheme(PutDataRequest.WEAR_URI_SCHEME).appendPath("/weather-info").authority(getNode()).build()).setResultCallback(onConnectionResult);
         }
 
         @Override
@@ -478,7 +481,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
                             for (Node node : nodes) {
                                 Wearable.MessageApi.sendMessage(mGoogleApiClient
                                         , node.getId()
-                                        , "/weather-info"
+                                        , WEATHER_REQUEST
                                         , new byte[0]).setResultCallback(
                                         new ResultCallback<MessageApi.SendMessageResult>() {
                                             @Override
@@ -496,70 +499,32 @@ public class MyWatchFace extends CanvasWatchFaceService {
                     });
         }
 
-        private final ResultCallback<DataItemBuffer> onConnectionResult = new ResultCallback<DataItemBuffer>() {
-            @Override
-            public void onResult(@NonNull DataItemBuffer dataItems) {
-                Log.d("MyWatchFace", "onConnectionResult");
-                Log.d("MyWatchFace", "data item status :: " + dataItems.getStatus());
-                Log.d("MyWatchFace", "data item count :: " + dataItems.getCount());
-                Log.d("MyWatchFace", "data item string :: " + dataItems.toString());
-                if (dataItems.getCount() == 0) {
-                } else {
-                    for (DataItem dataItem : dataItems) {
-                        processDataItem(dataItem);
-                    }
-                }
-
-            }
-        };
-
         private void processDataItem(DataItem dataItem) {
             DataMap dataMap = DataMapItem.fromDataItem(dataItem).getDataMap();
             String path = dataItem.getUri().getPath();
             Log.d("MyWatchFace", "path is ::" + path);
-            if (path.equals("/weather-info")) {
+            if (path.equals(WEATHER_INFO)) {
                 isWeatherDataAvailable = true;
-                String highTemp = dataMap.getString("w_high");
-                String lowTemp = dataMap.getString("w_low");
-                String desc = dataMap.getString("description");
-                Asset asset = dataMap.getAsset("w_icon");
+                String highTemp = dataMap.getString(WEATHER_HIGH);
+                String lowTemp = dataMap.getString(WEATHER_LOW);
+                Asset asset = dataMap.getAsset(WEATHER_ICON);
                 loadBitmapFromAsset(asset);
                 defaultHighTemp = highTemp;
                 defaultLowTemp = lowTemp;
-                Log.d("MyWatchFaceService", "high temprature is :: " + highTemp);
-                Log.d("MyWatchFaceService", "low temprature is :: " + lowTemp);
-                Log.d("MyWatchFaceService", "description is :: " + desc);
-//                Toast.makeText(getApplicationContext(), "High temprature is :: " + highTemp, Toast.LENGTH_SHORT).show();
                 invalidate();
             }
         }
 
         public void loadBitmapFromAsset(final Asset asset) {
-            new Thread(new Runnable() {
+            Wearable.DataApi.getFdForAsset(mGoogleApiClient, asset).setResultCallback(new ResultCallback<DataApi.GetFdForAssetResult>() {
                 @Override
-                public void run() {
-                    if (asset == null) {
-                        throw new IllegalArgumentException("Asset must be non-null");
-                    }
-                    ConnectionResult result =
-                            mGoogleApiClient.blockingConnect(60000, TimeUnit.MILLISECONDS);
-                    if (!result.isSuccess()) {
-                        return;
-                    }
-                    // convert asset into a file descriptor and block until it's ready
-                    InputStream assetInputStream = Wearable.DataApi.getFdForAsset(
-                            mGoogleApiClient, asset).await().getInputStream();
-
-                    if (assetInputStream == null) {
-                        Log.w("MyWatchFaceService", "Requested an unknown Asset.");
-                        return;
-                    }
+                public void onResult(@NonNull DataApi.GetFdForAssetResult getFdForAssetResult) {
+                    InputStream assetInputStream = getFdForAssetResult.getInputStream();
                     // decode the stream into a bitmap
                     mWeatherStatus = BitmapFactory.decodeStream(assetInputStream);
                     invalidate();
                 }
-            }).start();
-
+            });
         }
     }
 }

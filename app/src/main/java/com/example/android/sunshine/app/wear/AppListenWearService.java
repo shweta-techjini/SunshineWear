@@ -18,11 +18,6 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.wearable.Asset;
 import com.google.android.gms.wearable.DataApi;
-import com.google.android.gms.wearable.DataEvent;
-import com.google.android.gms.wearable.DataEventBuffer;
-import com.google.android.gms.wearable.DataItem;
-import com.google.android.gms.wearable.DataMap;
-import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.PutDataMapRequest;
@@ -31,11 +26,14 @@ import com.google.android.gms.wearable.Wearable;
 import com.google.android.gms.wearable.WearableListenerService;
 
 import java.io.ByteArrayOutputStream;
-import java.util.Iterator;
-import java.util.Set;
 
 public class AppListenWearService extends WearableListenerService implements DataApi.DataListener, MessageApi.MessageListener {
 
+    private static final String WEATHER_REQUEST = "/weather-request";
+    private static final String WEATHER_INFO = "/weather-info";
+    private static final String WEATHER_HIGH = "w_high";
+    private static final String WEATHER_LOW = "w_low";
+    private static final String WEATHER_ICON = "w_icon";
     private static GoogleApiClient googleApiClient;
 
     private static final String[] NOTIFY_WEATHER_PROJECTION = new String[]{
@@ -62,32 +60,10 @@ public class AppListenWearService extends WearableListenerService implements Dat
     }
 
     @Override
-    public void onDataChanged(DataEventBuffer dataEventBuffer) {
-        Log.d("AppListenWearService", "onDatachanges method call");
-        for (DataEvent event : dataEventBuffer) {
-            if (event.getType() == DataEvent.TYPE_CHANGED) {
-                // DataItem changed
-                DataItem dataItem = event.getDataItem();
-                Log.d("AppListWearService", "dataItem toString " + dataItem.toString());
-                DataMap dataMap = DataMapItem.fromDataItem(dataItem).getDataMap();
-                Set<String> keySet = dataMap.keySet();
-                Iterator<String> iterator = keySet.iterator();
-                while (iterator.hasNext()) {
-                    Log.d("AppListWearService", "onDataChanges key is : " + iterator.next() + " and value is :: " + dataMap.get(iterator.next()));
-                }
-
-            } else if (event.getType() == DataEvent.TYPE_DELETED) {
-                // DataItem deleted
-            }
-        }
-        super.onDataChanged(dataEventBuffer);
-    }
-
-    @Override
     public void onMessageReceived(MessageEvent messageEvent) {
         super.onMessageReceived(messageEvent);
         Log.d("AppListenWearService", "message is :: " + messageEvent);
-        if (messageEvent.getPath().equals("/weather-info")) {
+        if (messageEvent.getPath().equals(WEATHER_REQUEST)) {
             Log.d("AppListenWearService", "send data to wear if there is");
             SunshineSyncAdapter.syncImmediately(getApplicationContext());
         }
@@ -139,7 +115,6 @@ public class AppListenWearService extends WearableListenerService implements Dat
             int weatherId = cursor.getInt(INDEX_WEATHER_ID);
             double high = cursor.getDouble(INDEX_MAX_TEMP);
             double low = cursor.getDouble(INDEX_MIN_TEMP);
-            String desc = cursor.getString(INDEX_SHORT_DESC);
 
             String highTemp = Utility.formatTemperature(getApplicationContext(), high);
             String lowTemp = Utility.formatTemperature(getApplicationContext(), low);
@@ -148,11 +123,10 @@ public class AppListenWearService extends WearableListenerService implements Dat
             Resources resources = context.getResources();
             Bitmap weatherIcon = BitmapFactory.decodeResource(resources, iconId);
             if (googleApiClient.isConnected()) {
-                PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/weather-info");
-                putDataMapRequest.getDataMap().putString("w_high", highTemp);
-                putDataMapRequest.getDataMap().putString("w_low", lowTemp);
-                putDataMapRequest.getDataMap().putString("description", desc);
-                putDataMapRequest.getDataMap().putAsset("w_icon", createAssetFromBitmap(weatherIcon));
+                PutDataMapRequest putDataMapRequest = PutDataMapRequest.create(WEATHER_INFO);
+                putDataMapRequest.getDataMap().putString(WEATHER_HIGH, highTemp);
+                putDataMapRequest.getDataMap().putString(WEATHER_LOW, lowTemp);
+                putDataMapRequest.getDataMap().putAsset(WEATHER_ICON, createAssetFromBitmap(weatherIcon));
 
                 PutDataRequest putDataRequest = putDataMapRequest.asPutDataRequest();
                 Wearable.DataApi.putDataItem(googleApiClient, putDataRequest).setResultCallback(new ResultCallback<DataApi.DataItemResult>() {

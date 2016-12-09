@@ -200,7 +200,7 @@
 
                 <data
                     android:host="*"
-                    android:pathPrefix="/weather-info"
+                    android:pathPrefix="/weather-request"
                     android:scheme="wear"/>
             </intent-filter>
         </service>
